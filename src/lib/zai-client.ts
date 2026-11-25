@@ -1,75 +1,23 @@
 /**
- * Thin HTTP client for the z.ai chat/vision API — drop-in replacement for
- * z-ai-web-dev-sdk's chat.completions.createVision().
+ * Vision-model client for the ECG reader — one call, multiple providers.
  *
- * Why: the SDK reads its config ONLY from a .z-ai-config file at <cwd>,
- * <homedir> or /etc — all absent or read-only on serverless hosts (Vercel).
- * This client keeps the exact same wire format (endpoint, headers, request
- * and response shape) but resolves credentials from, in order:
- *   1. a .z-ai-config file (sandbox / CLI host — same files the SDK checks)
- *   2. ZAI_* environment variables (Vercel)
+ * Providers, tried in order until one answers:
+ *   1. OpenRouter (OpenAI-compatible, OpenRouter_API_KEY env) — primary on
+ *      serverless hosts. Model chain: nemotron-3.5-super-vl (best ECG
+ *      reading in tests) → ling-3.2-flash → gemma-4-31b (rate-limit
+ *      fallbacks).
+ *   2. z.ai internal API (.z-ai-config file or ZAI_* env) — primary on the
+ *      sandbox/CLI host (glm-4.5v).
  *
- * Only the surface the app uses is implemented: createVision().
+ * The wire format follows each provider's OpenAI-compatible
+ * chat/completions endpoint; the response is normalized to
+ * { choices: [{ message: { content } }] } everywhere.
  */
 import { existsSync, readFileSync } from 'fs'
 import os from 'os'
 import path from 'path'
 
-interface ZaiCreds {
-  baseUrl: string
-  apiKey: string
-  chatId?: string
-  userId?: string
-  token?: string
-}
-
-let cachedCreds: ZaiCreds | null = null
-
-/** Resolve credentials from config file or ZAI_* env vars. */
-export function zaiCreds(): ZaiCreds {
-  if (cachedCreds) return cachedCreds
-
-  // 1) config file — the same candidates the SDK itself checks
-  const candidates = [
-    path.join(process.cwd(), '.z-ai-config'),
-    path.join(os.homedir(), '.z-ai-config'),
-    '/etc/.z-ai-config',
-  ]
-  for (const p of candidates) {
-    try {
-      if (!existsSync(p)) continue
-      const cfg = JSON.parse(readFileSync(p, 'utf-8'))
-      if (cfg.baseUrl && cfg.apiKey) {
-        cachedCreds = {
-          baseUrl: cfg.baseUrl,
-          apiKey: cfg.apiKey,
-          chatId: cfg.chatId,
-          userId: cfg.userId,
-          token: cfg.token,
-        }
-        return cachedCreds
-      }
-    } catch {
-      // try next candidate
-    }
-  }
-
-  // 2) environment (serverless hosts)
-  if (process.env.ZAI_API_KEY) {
-    cachedCreds = {
-      baseUrl: process.env.ZAI_BASE_URL || 'https://internal-api.z.ai/v1',
-      apiKey: process.env.ZAI_API_KEY,
-      chatId: process.env.ZAI_CHAT_ID,
-      userId: process.env.ZAI_USER_ID,
-      token: process.env.ZAI_TOKEN,
-    }
-    return cachedCreds
-  }
-
-  throw new Error(
-    'z-ai credentials unavailable: no .z-ai-config file and ZAI_API_KEY is not set'
-  )
-}
+// ---------------------------------------------------------------- types
 
 export interface VisionMessage {
   role: 'system' | 'user' | 'assistant'
@@ -80,58 +28,179 @@ interface VisionChoice {
   message?: { content?: string | null }
 }
 
+export interface VisionResponse {
+  choices: VisionChoice[]
+  model?: string
+}
+
+interface Provider {
+  name: string
+  model: string
+  url: string
+  headers: Record<string, string>
+}
+
+// ---------------------------------------------------------------- providers
+
+/** OpenRouter model chain, ordered by ECG reading quality (tested). */
+const OPENROUTER_MODELS = [
+  'nvidia/nemotron-3.5-super-vl:free',
+  'inclusionai/ling-3.2-flash:free',
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+]
+
+interface ZaiCreds {
+  baseUrl: string
+  apiKey: string
+  chatId?: string
+  userId?: string
+  token?: string
+}
+
+let cachedZai: ZaiCreds | null = null
+
+/** z.ai credentials from config file or ZAI_* env (null when absent). */
+function zaiCreds(): ZaiCreds | null {
+  if (cachedZai) return cachedZai
+  const candidates = [
+    path.join(process.cwd(), '.z-ai-config'),
+    path.join(os.homedir(), '.z-ai-config'),
+    '/etc/.z-ai-config',
+  ]
+  for (const p of candidates) {
+    try {
+      if (!existsSync(p)) continue
+      const cfg = JSON.parse(readFileSync(p, 'utf-8'))
+      if (cfg.baseUrl && cfg.apiKey) {
+        cachedZai = {
+          baseUrl: cfg.baseUrl,
+          apiKey: cfg.apiKey,
+          chatId: cfg.chatId,
+          userId: cfg.userId,
+          token: cfg.token,
+        }
+        return cachedZai
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+  if (process.env.ZAI_API_KEY) {
+    cachedZai = {
+      baseUrl: process.env.ZAI_BASE_URL || 'https://internal-api.z.ai/v1',
+      apiKey: process.env.ZAI_API_KEY,
+      chatId: process.env.ZAI_CHAT_ID,
+      userId: process.env.ZAI_USER_ID,
+      token: process.env.ZAI_TOKEN,
+    }
+    return cachedZai
+  }
+  return null
+}
+
+/** Build the provider chain for this request (OpenRouter first on serverless). */
+function providerChain(): Provider[] {
+  const chain: Provider[] = []
+
+  const orKey = process.env.OPENROUTER_API_KEY
+  if (orKey) {
+    for (const model of OPENROUTER_MODELS) {
+      chain.push({
+        name: `openrouter:${model}`,
+        model,
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${orKey}`,
+          'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://aiecg.app',
+          'X-Title': 'AIECG',
+        },
+      })
+    }
+  }
+
+  const zai = zaiCreds()
+  if (zai) {
+    const internal = /internal-api\.z\.ai/.test(zai.baseUrl)
+    const base = zai.baseUrl.replace(/\/$/, '')
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${zai.apiKey}`,
+    }
+    if (internal) {
+      headers['X-Z-AI-From'] = 'Z'
+      if (zai.chatId) headers['X-Chat-Id'] = zai.chatId
+      if (zai.userId) headers['X-User-Id'] = zai.userId
+      if (zai.token) headers['X-Token'] = zai.token
+    }
+    chain.push({
+      name: `zai:${internal ? 'glm-4.5v' : 'glm-4.5v'}`,
+      model: 'glm-4.5v',
+      url: internal ? `${base}/chat/completions/vision` : `${base}/chat/completions`,
+      headers,
+    })
+  }
+
+  return chain
+}
+
+// ---------------------------------------------------------------- call
+
 /**
- * Send a vision chat completion.
- *
- * Two wire formats, auto-selected by endpoint:
- *  - internal (internal-api.z.ai): POST {baseUrl}/chat/completions/vision
- *    with X-Z-AI-From / X-Chat-Id headers (this sandbox).
- *  - public (api.z.ai open platform, OpenAI-compatible): POST {baseUrl}/chat/completions
- *    with plain Bearer auth — used when ZAI_BASE_URL points at the public API,
- *    e.g. https://api.z.ai/api/paas/v4 (serverless hosts like Vercel).
- *
- * @throws Error with a descriptive message on connection or API failure.
+ * Send a vision chat completion across the provider chain.
+ * @throws Error listing every provider failure when all of them fail.
  */
 export async function zaiCreateVision(body: {
-  model: string
+  model?: string
   messages: VisionMessage[]
   thinking?: { type: 'disabled' | 'enabled' }
-}): Promise<{ choices: VisionChoice[] }> {
-  const creds = zaiCreds()
-  const internal = /internal-api\.z\.ai/.test(creds.baseUrl)
-  const base = creds.baseUrl.replace(/\/$/, '')
-  const url = internal ? `${base}/chat/completions/vision` : `${base}/chat/completions`
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${creds.apiKey}`,
-  }
-  if (internal) {
-    headers['X-Z-AI-From'] = 'Z'
-    if (creds.chatId) headers['X-Chat-Id'] = creds.chatId
-    if (creds.userId) headers['X-User-Id'] = creds.userId
-    if (creds.token) headers['X-Token'] = creds.token
-  }
-
-  const requestBody = { ...body, thinking: body.thinking ?? { type: 'disabled' } }
-
-  let response: Response
-  try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody),
-    })
-  } catch (e) {
-    throw new Error(`vision API connection failed: ${(e as Error).message}`)
-  }
-
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => '')
+}): Promise<VisionResponse> {
+  const chain = providerChain()
+  if (chain.length === 0) {
     throw new Error(
-      `vision API request failed with status ${response.status}: ${errorBody.slice(0, 300)}`
+      'no AI provider configured: set OPENROUTER_API_KEY (or ZAI_API_KEY) in the environment'
     )
   }
 
-  return (await response.json()) as { choices: VisionChoice[] }
+  const errors: string[] = []
+  for (const p of chain) {
+    const requestBody: Record<string, unknown> = {
+      model: body.model || p.model,
+      messages: body.messages,
+    }
+    // thinking is a z.ai extension; OpenRouter providers ignore extras but
+    // some reject unknown fields, so only send it to z.ai.
+    if (p.name.startsWith('zai:')) {
+      requestBody.thinking = body.thinking ?? { type: 'disabled' }
+    }
+
+    let response: Response
+    try {
+      response = await fetch(p.url, {
+        method: 'POST',
+        headers: p.headers,
+        body: JSON.stringify(requestBody),
+      })
+    } catch (e) {
+      errors.push(`${p.name}: connection failed (${(e as Error).message})`)
+      continue
+    }
+
+    if (!response.ok) {
+      const t = await response.text().catch(() => '')
+      errors.push(`${p.name}: HTTP ${response.status} ${t.slice(0, 160)}`)
+      continue // try the next model/provider
+    }
+
+    const json = (await response.json()) as VisionResponse
+    const content = json.choices?.[0]?.message?.content
+    if (!content) {
+      errors.push(`${p.name}: empty response`)
+      continue
+    }
+    return json
+  }
+
+  throw new Error(`all AI providers failed — ${errors.join(' | ')}`)
 }

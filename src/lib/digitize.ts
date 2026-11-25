@@ -160,13 +160,16 @@ export function normalityToSuperclass(normality: string | null): string {
 export async function upsertLearningSample(
   caseId: string,
   labelNormality: string,
-  meta?: Record<string, unknown>
+  metaArg?: Record<string, unknown>
 ): Promise<void> {
   const c = await db.ecgCase.findUnique({
     where: { id: caseId },
-    select: { signalsJson: true, status: true },
+    select: { signalsJson: true, status: true, patientAge: true, patientGender: true },
   })
-  if (!c || !c.signalsJson || c.status !== 'completed') return
+  if (!c || c.status !== 'completed') return
+  // patient context is stored with the sample so the learning memory can
+  // match similar patients later; signals may be absent on serverless hosts
+  const meta = { ...(metaArg ?? {}), patientAge: c.patientAge, patientGender: c.patientGender }
 
   await db.learningSample.upsert({
     where: { id: `ls-${caseId}` },
@@ -176,15 +179,15 @@ export async function upsertLearningSample(
       source: 'user_case',
       labelNormality,
       superclass: normalityToSuperclass(labelNormality),
-      signalsJson: c.signalsJson,
+      signalsJson: c.signalsJson ?? '{}',
       samplingHz: 100,
-      metaJson: JSON.stringify(meta ?? {}),
+      metaJson: JSON.stringify(meta),
       labelOrigin: 'doctor_feedback',
     },
     update: {
       labelNormality,
       superclass: normalityToSuperclass(labelNormality),
-      metaJson: JSON.stringify(meta ?? {}),
+      metaJson: JSON.stringify(meta),
     },
   })
 }

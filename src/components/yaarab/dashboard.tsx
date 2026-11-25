@@ -17,7 +17,6 @@ import {
   Stethoscope,
 } from 'lucide-react'
 import { NormalityBadge, formatDateShort } from './ecg-visuals'
-import { LearningCard } from './learning-card'
 import { cn } from '@/lib/utils'
 
 export function Dashboard({
@@ -135,9 +134,6 @@ export function Dashboard({
           </div>
         </CardContent>
       </Card>
-
-      {/* Self-learning engine */}
-      <LearningCard />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -30,6 +30,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       patientGender: c.patientGender,
       clinicalNotes: c.clinicalNotes,
       bloodPressure: c.bloodPressure,
+      digitizedSignals: c.signalsJson ? JSON.parse(c.signalsJson) : null,
     })
 
     const updated = await db.ecgCase.update({

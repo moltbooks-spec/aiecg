@@ -145,7 +145,6 @@ export async function chatAboutCase(
   ]
 
   const response = await zaiCreateVision({
-    model: 'glm-4.5v',
     messages,
     thinking: { type: 'disabled' },
   })

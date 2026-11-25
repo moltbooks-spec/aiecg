@@ -7,6 +7,7 @@
 import { zaiCreateVision } from '@/lib/zai-client'
 import { sanitizeMedicalText } from '@/lib/text-sanitize'
 import { buildReferencePrompt, LEAD_NAMES } from '@/lib/ecg-knowledge'
+import { buildLearningPrompt } from '@/lib/ecg-learning'
 
 export interface LeadFinding {
   lead: string
@@ -57,6 +58,8 @@ interface AnalyzeInput {
   patientGender: string
   clinicalNotes?: string | null
   bloodPressure?: string | null
+  /** digitized per-lead signals when available — feeds the learning memory */
+  digitizedSignals?: Record<string, number[]> | null
 }
 
 const SYSTEM_PROMPT = `You are a cardiac electrophysiologist with 25 years of experience reading electrocardiograms. Your task is to analyze the attached ECG image and produce a structured, accurate medical reading in professional English, with a MANDATORY per-lead analysis.
@@ -408,6 +411,14 @@ export class NotAnEcgError extends Error {
  * @throws Error on connection or analysis failure
  */
 export async function analyzeEcgImage(input: AnalyzeInput): Promise<EcgAnalysisResult> {
+  // automatic learning memory: physician-confirmed cases + matched
+  // reference anchors (silent — no UI, no triggers, improves every reading)
+  const learningBlock = await buildLearningPrompt({
+    patientAge: input.patientAge,
+    patientGender: input.patientGender,
+    signals: input.digitizedSignals ?? null,
+  })
+
   const response = await zaiCreateVision({
     model: 'glm-4.5v',
     messages: [
@@ -416,7 +427,7 @@ export async function analyzeEcgImage(input: AnalyzeInput): Promise<EcgAnalysisR
         content: [
           {
             type: 'text',
-            text: `${SYSTEM_PROMPT}\n\n${await buildReferencePrompt()}\n\n${buildUserPrompt(input)}`,
+            text: `${SYSTEM_PROMPT}\n\n${await buildReferencePrompt()}\n\n${learningBlock}\n\n${buildUserPrompt(input)}`,
           },
           { type: 'image_url', image_url: { url: input.imageDataUrl } },
         ],
