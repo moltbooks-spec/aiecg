@@ -81,7 +81,15 @@ interface VisionChoice {
 }
 
 /**
- * Send a vision chat completion (same wire format as the SDK's createVision).
+ * Send a vision chat completion.
+ *
+ * Two wire formats, auto-selected by endpoint:
+ *  - internal (internal-api.z.ai): POST {baseUrl}/chat/completions/vision
+ *    with X-Z-AI-From / X-Chat-Id headers (this sandbox).
+ *  - public (api.z.ai open platform, OpenAI-compatible): POST {baseUrl}/chat/completions
+ *    with plain Bearer auth — used when ZAI_BASE_URL points at the public API,
+ *    e.g. https://api.z.ai/api/paas/v4 (serverless hosts like Vercel).
+ *
  * @throws Error with a descriptive message on connection or API failure.
  */
 export async function zaiCreateVision(body: {
@@ -90,16 +98,20 @@ export async function zaiCreateVision(body: {
   thinking?: { type: 'disabled' | 'enabled' }
 }): Promise<{ choices: VisionChoice[] }> {
   const creds = zaiCreds()
-  const url = `${creds.baseUrl.replace(/\/$/, '')}/chat/completions/vision`
+  const internal = /internal-api\.z\.ai/.test(creds.baseUrl)
+  const base = creds.baseUrl.replace(/\/$/, '')
+  const url = internal ? `${base}/chat/completions/vision` : `${base}/chat/completions`
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${creds.apiKey}`,
-    'X-Z-AI-From': 'Z',
   }
-  if (creds.chatId) headers['X-Chat-Id'] = creds.chatId
-  if (creds.userId) headers['X-User-Id'] = creds.userId
-  if (creds.token) headers['X-Token'] = creds.token
+  if (internal) {
+    headers['X-Z-AI-From'] = 'Z'
+    if (creds.chatId) headers['X-Chat-Id'] = creds.chatId
+    if (creds.userId) headers['X-User-Id'] = creds.userId
+    if (creds.token) headers['X-Token'] = creds.token
+  }
 
   const requestBody = { ...body, thinking: body.thinking ?? { type: 'disabled' } }
 
