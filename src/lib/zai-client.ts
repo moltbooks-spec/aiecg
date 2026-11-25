@@ -2,12 +2,18 @@
  * Vision-model client for the ECG reader — one call, multiple providers.
  *
  * Providers, tried in order until one answers:
- *   1. OpenRouter (OpenAI-compatible, OpenRouter_API_KEY env) — primary on
- *      serverless hosts. Model chain: nemotron-3.5-super-vl (best ECG
- *      reading in tests) → ling-3.2-flash → gemma-4-31b (rate-limit
- *      fallbacks).
- *   2. z.ai internal API (.z-ai-config file or ZAI_* env) — primary on the
- *      sandbox/CLI host (glm-4.5v).
+ *   1. OpenRouter (OpenAI-compatible, OPENROUTER_API_KEY env) — primary.
+ *      Model chain: nemotron-3.5-super-vl (best ECG reading in tests) →
+ *      ling-3.2-flash → gemma-4-31b → gemma-4-26b (rate-limit fallbacks).
+ *      Every request carries an explicit max_tokens: without it OpenRouter
+ *      pre-checks the request's maximum possible cost against the key's
+ *      credits and rejects keys with low credits via HTTP 402 even when the
+ *      real usage would fit. 8192 covers the full reading JSON (~6.7k tokens
+ *      observed) with headroom.
+ *   2. z.ai internal API — only used when a real API key is present
+ *      (.z-ai-config / ZAI_API_KEY longer than a placeholder). The sandbox
+ *      config carries apiKey "Z.ai" (auth there is via the X-Token JWT),
+ *      which 401s from outside the z.ai network, so it is skipped.
  *
  * The wire format follows each provider's OpenAI-compatible
  * chat/completions endpoint; the response is normalized to
@@ -60,7 +66,7 @@ interface ZaiCreds {
 
 let cachedZai: ZaiCreds | null = null
 
-/** z.ai credentials from config file or ZAI_* env (null when absent). */
+/** z.ai credentials from config file or ZAI_* env (null when unusable). */
 function zaiCreds(): ZaiCreds | null {
   if (cachedZai) return cachedZai
   const candidates = [
@@ -80,6 +86,9 @@ function zaiCreds(): ZaiCreds | null {
           userId: cfg.userId,
           token: cfg.token,
         }
+        // the sandbox config carries a placeholder apiKey ("Z.ai"); auth on
+        // that host is via the X-Token JWT and 401s from outside z.ai
+        if (isPlaceholderKey(cachedZai.apiKey)) return null
         return cachedZai
       }
     } catch {
@@ -94,9 +103,16 @@ function zaiCreds(): ZaiCreds | null {
       userId: process.env.ZAI_USER_ID,
       token: process.env.ZAI_TOKEN,
     }
+    // placeholder keys ("Z.ai", "z.ai") never authenticate — skip them
+    if (isPlaceholderKey(cachedZai.apiKey)) return null
     return cachedZai
   }
   return null
+}
+
+/** True for non-authenticating placeholder keys found in sandbox configs. */
+function isPlaceholderKey(key: string): boolean {
+  return /^(z\.ai)$/i.test(key.trim())
 }
 
 /** Build the provider chain for this request (OpenRouter first on serverless). */
@@ -173,6 +189,11 @@ export async function zaiCreateVision(body: {
     // some reject unknown fields, so only send it to z.ai.
     if (p.name.startsWith('zai:')) {
       requestBody.thinking = body.thinking ?? { type: 'disabled' }
+    } else {
+      // cap output tokens: OpenRouter pre-computes the request's maximum
+      // possible cost from an uncapped completion and rejects low-credit
+      // keys with 402 before running the request at all
+      requestBody.max_tokens = 8192
     }
 
     let response: Response
