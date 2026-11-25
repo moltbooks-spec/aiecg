@@ -4,8 +4,7 @@
  * structured medical JSON, anchored to the PTB-XL SCP-ECG reference framework
  * (see @/lib/ecg-knowledge) so each of the 12 leads is read individually.
  */
-import ZAI from 'z-ai-web-dev-sdk'
-import { ensureZaiConfig } from '@/lib/zai-config'
+import { zaiCreateVision } from '@/lib/zai-client'
 import { sanitizeMedicalText } from '@/lib/text-sanitize'
 import { buildReferencePrompt, LEAD_NAMES } from '@/lib/ecg-knowledge'
 
@@ -409,10 +408,7 @@ export class NotAnEcgError extends Error {
  * @throws Error on connection or analysis failure
  */
 export async function analyzeEcgImage(input: AnalyzeInput): Promise<EcgAnalysisResult> {
-  ensureZaiConfig()
-  const zai = await ZAI.create()
-
-  const response = await zai.chat.completions.createVision({
+  const response = await zaiCreateVision({
     model: 'glm-4.5v',
     messages: [
       {

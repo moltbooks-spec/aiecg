@@ -4,8 +4,7 @@
  * the full case context (patient data, analysis results, the ECG image itself)
  * plus the conversation history, and answers as a consulting cardiologist.
  */
-import ZAI from 'z-ai-web-dev-sdk'
-import { ensureZaiConfig } from '@/lib/zai-config'
+import { zaiCreateVision } from '@/lib/zai-client'
 import { sanitizeMedicalText } from '@/lib/text-sanitize'
 import type { EcgCase } from '@prisma/client'
 
@@ -122,8 +121,6 @@ export async function chatAboutCase(
   c: EcgCase,
   history: ChatTurn[]
 ): Promise<string> {
-  ensureZaiConfig()
-  const zai = await ZAI.create()
 
   const visionContent: Array<
     | { type: 'text'; text: string }
@@ -147,7 +144,7 @@ export async function chatAboutCase(
     ...history.map((m) => ({ role: m.role, content: m.content })),
   ]
 
-  const response = await zai.chat.completions.createVision({
+  const response = await zaiCreateVision({
     model: 'glm-4.5v',
     messages,
     thinking: { type: 'disabled' },
