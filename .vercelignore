@@ -1,0 +1,14 @@
+.venv
+external
+db
+tests
+examples
+mini-services
+.zscripts
+data/models
+download
+assets/test-ecg.png
+__pycache__
+dev.log
+server.log
+tsconfig.tsbuildinfo

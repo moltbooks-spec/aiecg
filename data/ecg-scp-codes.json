@@ -1,0 +1,574 @@
+{
+ "source": "PTB-XL v1.0.3 scp_statements.csv (PhysioNet)",
+ "count": 71,
+ "entries": [
+  {
+   "code": "NDT",
+   "label": "non-diagnostic T abnormalities",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "NST_",
+   "label": "non-specific ST changes",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "DIG",
+   "label": "digitalis-effect",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "LNGQT",
+   "label": "long QT-interval",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "NORM",
+   "label": "normal ECG",
+   "diagnosticClass": "NORM",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "IMI",
+   "label": "inferior myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ASMI",
+   "label": "anteroseptal myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "LVH",
+   "label": "left ventricular hypertrophy",
+   "diagnosticClass": "HYP",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "LAFB",
+   "label": "left anterior fascicular block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ISC_",
+   "label": "non-specific ischemic",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "IRBBB",
+   "label": "incomplete right bundle branch block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "1AVB",
+   "label": "first degree AV block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "IVCD",
+   "label": "non-specific intraventricular conduction disturbance (block)",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ISCAL",
+   "label": "ischemic in anterolateral leads",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "CRBBB",
+   "label": "complete right bundle branch block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "CLBBB",
+   "label": "complete left bundle branch block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ILMI",
+   "label": "inferolateral myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "LAO/LAE",
+   "label": "left atrial overload/enlargement",
+   "diagnosticClass": "HYP",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "AMI",
+   "label": "anterior myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ALMI",
+   "label": "anterolateral myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ISCIN",
+   "label": "ischemic in inferior leads",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "INJAS",
+   "label": "subendocardial injury in anteroseptal leads",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "LMI",
+   "label": "lateral myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ISCIL",
+   "label": "ischemic in inferolateral leads",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "LPFB",
+   "label": "left posterior fascicular block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ISCAS",
+   "label": "ischemic in anteroseptal leads",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "INJAL",
+   "label": "subendocardial injury in anterolateral leads",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ISCLA",
+   "label": "ischemic in lateral leads",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "RVH",
+   "label": "right ventricular hypertrophy",
+   "diagnosticClass": "HYP",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ANEUR",
+   "label": "ST-T changes compatible with ventricular aneurysm",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "RAO/RAE",
+   "label": "right atrial overload/enlargement",
+   "diagnosticClass": "HYP",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "EL",
+   "label": "electrolytic disturbance or drug (former EDIS)",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "WPW",
+   "label": "Wolf-Parkinson-White syndrome",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ILBBB",
+   "label": "incomplete left bundle branch block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "IPLMI",
+   "label": "inferoposterolateral myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ISCAN",
+   "label": "ischemic in anterior leads",
+   "diagnosticClass": "STTC",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "IPMI",
+   "label": "inferoposterior myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "SEHYP",
+   "label": "septal hypertrophy",
+   "diagnosticClass": "HYP",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "INJIN",
+   "label": "subendocardial injury in inferior leads",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "INJLA",
+   "label": "subendocardial injury in lateral leads",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "PMI",
+   "label": "posterior myocardial infarction",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "3AVB",
+   "label": "third degree AV block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "INJIL",
+   "label": "subendocardial injury in inferolateral leads",
+   "diagnosticClass": "MI",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "2AVB",
+   "label": "second degree AV block",
+   "diagnosticClass": "CD",
+   "diagnostic": false,
+   "form": null,
+   "rhythm": null
+  },
+  {
+   "code": "ABQRS",
+   "label": "abnormal QRS",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "PVC",
+   "label": "ventricular premature complex",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "STD_",
+   "label": "non-specific ST depression",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "VCLVH",
+   "label": "voltage criteria (QRS) for left ventricular hypertrophy",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "QWAVE",
+   "label": "Q waves present",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "LOWT",
+   "label": "low amplitude T-waves",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "NT_",
+   "label": "non-specific T-wave changes",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "PAC",
+   "label": "atrial premature complex",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "LPR",
+   "label": "prolonged PR interval",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "INVT",
+   "label": "inverted T-waves",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "LVOLT",
+   "label": "low QRS voltages in the frontal and horizontal leads",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "HVOLT",
+   "label": "high QRS voltage",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "TAB_",
+   "label": "T-wave abnormality",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "STE_",
+   "label": "non-specific ST elevation",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "PRC(S)",
+   "label": "premature complex(es)",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": "1.0",
+   "rhythm": null
+  },
+  {
+   "code": "SR",
+   "label": "sinus rhythm",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "AFIB",
+   "label": "atrial fibrillation",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "STACH",
+   "label": "sinus tachycardia",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "SARRH",
+   "label": "sinus arrhythmia",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "SBRAD",
+   "label": "sinus bradycardia",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "PACE",
+   "label": "normal functioning artificial pacemaker",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "SVARR",
+   "label": "supraventricular arrhythmia",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "BIGU",
+   "label": "bigeminal pattern (unknown origin, SV or Ventricular)",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "AFLT",
+   "label": "atrial flutter",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "SVTAC",
+   "label": "supraventricular tachycardia",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "PSVT",
+   "label": "paroxysmal supraventricular tachycardia",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  },
+  {
+   "code": "TRIGU",
+   "label": "trigeminal pattern (unknown origin, SV or Ventricular)",
+   "diagnosticClass": null,
+   "diagnostic": false,
+   "form": null,
+   "rhythm": "1.0"
+  }
+ ]
+}

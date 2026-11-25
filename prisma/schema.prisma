@@ -1,0 +1,222 @@
+// AIECG — Prisma schema (PostgreSQL on Supabase)
+// App auth: session-based (scrypt + opaque token in Session table)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================================================ users & sessions
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  doctorName   String
+  hospitalName String
+  specialty    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  cases        EcgCase[]
+  feedbacks    DoctorFeedback[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ================================================================ ECG cases
+
+model EcgCase {
+  id            String    @id @default(cuid())
+  caseNumber    String    @unique
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientName   String
+  patientAge    Int
+  patientGender String
+  patientId     String?
+  bloodPressure String?
+  clinicalNotes String?
+  imageBase64   String
+  imageMimeType String
+  status        String    @default("analyzing") // analyzing | completed | failed
+  error         String?
+
+  // ---- AI analysis fields ----
+  heartRate      Int?
+  rhythm         String?
+  pWave          String?
+  prInterval     String?
+  qrsDuration    String?
+  qtInterval     String?
+  qtcInterval    String?
+  axis           String?
+  stSegment      String?
+  quality        String?
+  confidence     String?
+  normality      String?
+  urgency        String?
+  findingsJson   String?
+  conclusion     String?
+  recommendationsJson String?
+
+  // ---- per-lead reading fields ----
+  leadFindingsJson    String? // JSON: [{ lead, scpCode, finding, severity }]
+  regionalSummaryJson String? // JSON: [{ region, verdict, note, leads, evidenceLeads }]
+  crossCheckJson      String? // JSON: { regionalConsistency, discrepancies, notes }
+
+  // ---- digitization ----
+  digitizedAt   DateTime?
+  digitizerInfo String? // JSON: { method, samplingHz, leadCount, durationS, notes }
+  signalsJson   String? // JSON: { "I": [..], "II": [..], ... } in mV, rounded to µV
+
+  // ---- relations ----
+  feedbacks DoctorFeedback[]
+  chatMessages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  caseId    String
+  ecgCase   EcgCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  role      String // 'user' | 'assistant'
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([caseId, createdAt])
+}
+
+// ================================================================ doctor feedback (learning labels)
+
+model DoctorFeedback {
+  id               String   @id @default(cuid())
+  caseId           String
+  case             EcgCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verdict          String // agree | disagree | partial
+  correctNormality String? // Normal | Borderline | Abnormal (physician's ground truth)
+  correctUrgency   String? // Routine | Urgent | Emergency
+  comment          String?
+  createdAt        DateTime @default(now())
+
+  @@unique([caseId, userId])
+  @@index([userId, createdAt])
+}
+
+// ================================================================ knowledge base (reference data)
+
+model ScpCode {
+  id              String   @id // SCP-ECG statement code (text, e.g. "NDT", "IMI")
+  label           String
+  diagnosticClass String? // NORM | MI | STTC | CD | HYP | null
+  isDiagnostic    Boolean  @default(false)
+  isForm          Boolean  @default(false)
+  isRhythm        Boolean  @default(false)
+  ahaCode         String?
+  dicomCode       String?
+  category        String? // Statement Category from scp_statements
+  description     String? // SCP-ECG Statement Description
+  sourceDataset   String   @default("PTB-XL v1.0.3")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([diagnosticClass])
+}
+
+model LeadCriterion {
+  id        String   @id @default(cuid())
+  lead      String // I, II, III, aVR, aVL, aVF, V1..V6
+  region    String // anterior | septal | lateral | inferior | posterior | right
+  criterion String // short key (e.g. normal_r_amplitude)
+  detail    String // human-readable text
+  source    String   @default("PTB-XL / standard 12-lead criteria")
+  createdAt DateTime @default(now())
+
+  @@unique([lead, criterion])
+  @@index([region])
+}
+
+model ReferenceEcg {
+  id            String   @id @default(cuid())
+  sourceDataset String   @default("PTB-XL")
+  sourceRecord  String // records100/00000/00001_lr
+  sourceLabel   String // stratification class (NORM, IMI, ...)
+  superclass    String // NORM | MI | STTC | CD | HYP
+  samplingHz    Int      @default(100)
+  durationS     Float    @default(10.0)
+  signalsJson   String // JSON: { lead -> float[] } in mV
+  metaJson      String? // JSON: age, sex, report, scp_codes ...
+  createdAt     DateTime @default(now())
+
+  @@unique([sourceDataset, sourceRecord])
+  @@index([superclass])
+}
+
+model ModelVersion {
+  id           String   @id @default(cuid())
+  version      Int      @unique
+  architecture String // resnet1d_wang
+  basePath     String // data/models/resnet1d_baseline.pt
+  scalerJson   String // JSON: { mean: [12], std: [12], leadOrder: [12] }
+  metricsJson  String? // JSON: { valAccuracy, macroF1, perClass }
+  trainRecords Int      @default(0)
+  sourceNote   String? // initial PTB-XL sample | self-learning run #N
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([isActive])
+}
+
+// ================================================================ self-learning pipeline
+
+model LearningSample {
+  id             String   @id @default(cuid())
+  caseId         String? // app case (when source = user_case)
+  source         String // user_case | reference
+  labelNormality String // Normal | Borderline | Abnormal (from feedback or reference)
+  superclass     String // NORM | MI | STTC | CD | HYP
+  signalsJson    String // JSON: { lead -> float[] }
+  samplingHz     Int      @default(100)
+  metaJson       String? // patient context, feedback verdict, model prediction at capture
+  labelOrigin    String // doctor_feedback | reference_dataset
+  createdAt      DateTime @default(now())
+
+  @@index([superclass])
+  @@index([source, createdAt])
+}
+
+model LearningRun {
+  id             String    @id @default(cuid())
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+  status         String    @default("running") // running | succeeded | failed
+  trigger        String    @default("manual") // manual | scheduled | threshold
+  samplesUsed    Int       @default(0)
+  referencesUsed Int       @default(0)
+  newVersionId   String?
+  metricsJson    String? // JSON: { valAccuracy, macroF1, perClass, improvedVsActive }
+  logJson        String? // JSON: string[]
+  error          String?
+
+  @@index([startedAt])
+}
