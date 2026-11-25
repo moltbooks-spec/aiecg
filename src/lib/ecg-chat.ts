@@ -5,6 +5,7 @@
  * plus the conversation history, and answers as a consulting cardiologist.
  */
 import ZAI from 'z-ai-web-dev-sdk'
+import { ensureZaiConfig } from '@/lib/zai-config'
 import { sanitizeMedicalText } from '@/lib/text-sanitize'
 import type { EcgCase } from '@prisma/client'
 
@@ -121,6 +122,7 @@ export async function chatAboutCase(
   c: EcgCase,
   history: ChatTurn[]
 ): Promise<string> {
+  ensureZaiConfig()
   const zai = await ZAI.create()
 
   const visionContent: Array<
